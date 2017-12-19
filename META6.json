@@ -1,0 +1,20 @@
+{
+  "name": "Cube::Three",
+  "source-url": "git://github.com/coke/p6-cube-three.git",
+  "perl": "6.c",
+  "resources": [
+    
+  ],
+  "depends": [
+    
+  ],
+  "license": "Artistic-2.0",
+  "provides": {
+    "Cube::Three": "lib/Cube/Three.pm"
+  },
+  "version": "0.1.0",
+  "authors": [
+    "Will 'Coke' Coleda"
+  ],
+  "description": "module for manipulating and solving a 3x3x3 Rubik's Cube"
+}
