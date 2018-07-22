@@ -2,9 +2,17 @@
 
 enum Side «:Up('U') :Down('D') :Front('F') :Back('B') :Left('L') :Right('R')»;
 enum Colors «:Red('R') :Green('G') :Blue('B') :Yellow('Y') :White('W') :Orange('O')»;
+enum Cell-State «Positioned Oriented Nope»;
 
 class Cube::Three {
     has %!Sides;
+
+    has %!expected-sides = (
+        Pair.new(Red,    Front),
+        Pair.new(Blue,   Right),
+        Pair.new(Orange, Back),
+        Pair.new(Green,  Left),
+    );
 
     # Refer to layout.md for details on which cell is where on the cube.
     submethod BUILD() {
@@ -42,6 +50,32 @@ class Cube::Three {
         }
         $result ~= %!Sides{Down}.rotor(3).join("\n").indent(6);
         $result;
+    }
+
+    # Provide utility method for checking corners
+    # Array of corners, each an array of pieces.
+    has @!corners = [
+        [Pair.new(Up,  0),  Pair.new(Back,  8), Pair.new(Left,  2)],
+        [Pair.new(Up,  2),  Pair.new(Right, 8), Pair.new(Back,  2)],
+        [Pair.new(Up,  6),  Pair.new(Left,  8), Pair.new(Front, 2)],
+        [Pair.new(Up,  8),  Pair.new(Front, 8), Pair.new(Right, 2)],
+        [Pair.new(Down, 0), Pair.new(Front, 0), Pair.new(Left,  6)],
+        [Pair.new(Down, 2), Pair.new(Right, 0), Pair.new(Front, 6)],
+        [Pair.new(Down, 6), Pair.new(Left,  0), Pair.new(Back,  6)],
+        [Pair.new(Down, 8), Pair.new(Back,  0), Pair.new(Right, 6)],
+    ];
+
+    method !corner-state(Int $pos)  {
+        my $corner = @!corners[$pos];
+        my @expected;
+        my @found;
+        for $corner.kv -> $pos, $cell {
+            @expected[$pos] = %!Sides{$cell.key}[4];
+            @found[$pos] = %!Sides{$cell.key}[$cell.value];
+        }
+        return Oriented   if @expected eqv @found;
+        return Positioned if @expected.sort eqv @found.sort;
+        return Nope;
     }
 
     # Since all faces use the same handedness (even if 0 is in a different spot)
@@ -292,13 +326,6 @@ class Cube::Three {
         }
         # TODO - combine this with conditional above
         my @ordered-sides = [Front, Right, Back, Left];
-        # TODO (make this an object hash)
-        my %expected-sides = (
-            Pair.new(Red,    Front),
-            Pair.new(Blue,   Right),
-            Pair.new(Orange, Back),
-            Pair.new(Green,  Left),
-        );
 
         MAIN:
         while !completed() {
@@ -322,7 +349,7 @@ class Cube::Three {
                     # find number of times we need to rotate the top:
                     my $turns = (
                         @ordered-sides.first($side1, :k) -
-                        @ordered-sides.first(%expected-sides{~$color1}, :k)
+                        @ordered-sides.first(%!expected-sides{~$color1}, :k)
                     ) % 4;
                     self.U for 1..$turns;
                     self."$side1"();
@@ -331,7 +358,7 @@ class Cube::Three {
                 } elsif $color1 eq 'W' {
                     my $turns = (
                         @ordered-sides.first($side7, :k) -
-                        @ordered-sides.first(%expected-sides{~$color7}, :k)
+                        @ordered-sides.first(%!expected-sides{~$color7}, :k)
                     ) % 4;
                     self.Uʼ for 1..$turns;
                     self."$side1"();
@@ -400,7 +427,58 @@ class Cube::Three {
         }
     }
 
+    method solve-top-corners {
+        # If all 4 are in place in the right location, we can stop.
+        sub completed {
+            say "DID WE GET TEHRE?";
+            so [==] Oriented, |(^4).map:{self!corner-state($_)}
+        }
+
+        MAIN:
+        while !completed() {
+            say "STARTING top-corners";
+            # Find a bottom corner with white in the 0 position on the side.
+            for @!corners[4..7] -> $corner {
+                 if %!Sides{$corner[1].key}[$corner[1].value] eq 'W' {
+                     say "solving HERE?";
+                     # Get the color on the bottom. Turn Down so that the W
+                     # is one turn CW from the side of that color's face
+                     # (so if it's blue, put it so white faces orange)
+                     # turn the face on the opposite side of the W clockwise.
+                     # turn Down CCW. turn face that you just turned CW CCW.A
+dd $corner;
+                     my $bottom-color = %!Sides{$corner[0].key}[$corner[0].value];
+                     say "BOTTOM COLOR IS $bottom-color";
+                     last;;
+                 }
+            }
+            # Find a bottom corner with white in the 6 position on the side.
+            for @!corners[4..7] -> $corner {
+                 if %!Sides{$corner[2].key}[$corner[2].value] eq 'W' {
+                     say "OOH, I CAN FIX THIS, MAYBE";
+                     last;;
+                 }
+            }
+            # Find a top piece with white in the 2 position
+            for @!corners[^4] -> $corner {
+                 if %!Sides{$corner[2].key}[$corner[2].value] eq 'W' {
+                     say "OOH, I CAN FIX THIS, MAYBE..";
+                     last;;
+                 }
+            }
+            for @!corners[^4] -> $corner {
+                 if %!Sides{$corner[1].key}[$corner[1].value] eq 'W' {
+                     say "OOH, I CAN FIX THIS, MAYBE::";
+                     last;;
+                 }
+            }
+            last; #XXX
+        }
+    }
+
     method solve {
         self.solve-top-cross;
+        say self;
+        self.solve-top-corners;
     }
 }
