@@ -10,11 +10,11 @@
   ],
   "license": "Artistic-2.0",
   "provides": {
-    "Cube::Three": "lib/Cube/Three.pm"
+    "Cube::Three": "lib/Cube/Three.rakumod"
   },
   "version": "0.1.0",
   "authors": [
-    "Will 'Coke' Coleda"
+    "Will Coleda"
   ],
   "description": "module for manipulating and solving a 3x3x3 Rubik's Cube"
 }
